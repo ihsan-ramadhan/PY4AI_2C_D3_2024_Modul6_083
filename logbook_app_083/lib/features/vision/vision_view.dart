@@ -83,7 +83,7 @@ class _VisionViewState extends State<VisionView> {
               const Text("Overlay", style: TextStyle(fontSize: 12)),
               Switch(
                 value: _showOverlay,
-                activeColor: Colors.redAccent,
+                activeColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setState(() {
                     _showOverlay = val;
@@ -150,7 +150,9 @@ class _VisionViewState extends State<VisionView> {
           if (!_visionController.isInitialized || _visionController.errorMessage != null) {
             return const SizedBox.shrink();
           }
-          return FloatingActionButton.extended(
+          return FloatingActionButton(
+            shape: const CircleBorder(),
+            elevation: 4,
             onPressed: () async {
               if (_visionController.controller != null && _visionController.controller!.value.isInitialized) {
                 try {
@@ -171,10 +173,7 @@ class _VisionViewState extends State<VisionView> {
                 }
               }
             },
-            icon: const Icon(Icons.camera_alt),
-            label: const Text("Capture Frame"),
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.indigo,
+            child: const Icon(Icons.camera_alt, size: 30),
           );
         }
       ),
