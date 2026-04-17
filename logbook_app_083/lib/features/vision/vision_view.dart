@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'vision_controller.dart';
 import 'damage_painter.dart';
+import 'pcd_result_view.dart';
 
 class VisionView extends StatefulWidget {
   const VisionView({super.key});
@@ -18,7 +19,6 @@ class _VisionViewState extends State<VisionView> {
   Timer? _mockTimer;
   bool _showOverlay = true;
 
-  // Nilai normalisasi simulasi posisi awal (0.0 - 1.0)
   double _mockRawX = 0.5;
   double _mockRawY = 0.5;
   double _mockQuality = 0.92;
@@ -27,16 +27,14 @@ class _VisionViewState extends State<VisionView> {
   void initState() {
     super.initState();
     _visionController = VisionController();
-    
-    // Timer pemindah kotak otomatis (Tugas Mock Detector) setiap 3 detik
+
     _mockTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
           final random = Random();
-          // Nilai antara 0.1 dan 0.9 agar tidak terlalu ke pinggir
           _mockRawX = 0.1 + random.nextDouble() * 0.8;
           _mockRawY = 0.1 + random.nextDouble() * 0.8;
-          _mockQuality = 0.5 + random.nextDouble() * 0.49; // 50% - 99%
+          _mockQuality = 0.5 + random.nextDouble() * 0.49;
         });
       }
     });
@@ -53,15 +51,13 @@ class _VisionViewState extends State<VisionView> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // LAYER 1: Hardware Preview
         Center(
           child: AspectRatio(
             aspectRatio: 1 / _visionController.controller!.value.aspectRatio,
             child: CameraPreview(_visionController.controller!),
           ),
         ),
-        
-        // LAYER 2: Digital Overlay (Canvas)
+
         if (_showOverlay)
           Positioned.fill(
             child: CustomPaint(
@@ -101,15 +97,15 @@ class _VisionViewState extends State<VisionView> {
             builder: (context, _) {
               return IconButton(
                 icon: Icon(
-                  _visionController.isFlashlightOn 
-                    ? Icons.flash_on 
-                    : Icons.flash_off,
+                  _visionController.isFlashlightOn
+                      ? Icons.flash_on
+                      : Icons.flash_off,
                 ),
                 onPressed: () {
                   _visionController.toggleFlashlight();
                 },
               );
-            }
+            },
           ),
         ],
       ),
@@ -128,7 +124,7 @@ class _VisionViewState extends State<VisionView> {
                   ElevatedButton(
                     onPressed: () => openAppSettings(),
                     child: const Text("Buka Settings"),
-                  )
+                  ),
                 ],
               ),
             );
@@ -140,7 +136,7 @@ class _VisionViewState extends State<VisionView> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text("Menghubungkan ke Sensor Visual...")
+                  Text("Menghubungkan ke Sensor Visual..."),
                 ],
               ),
             );
@@ -148,6 +144,41 @@ class _VisionViewState extends State<VisionView> {
           return _buildVisionStack();
         },
       ),
+      floatingActionButton: ListenableBuilder(
+        listenable: _visionController,
+        builder: (context, _) {
+          if (!_visionController.isInitialized || _visionController.errorMessage != null) {
+            return const SizedBox.shrink();
+          }
+          return FloatingActionButton.extended(
+            onPressed: () async {
+              if (_visionController.controller != null && _visionController.controller!.value.isInitialized) {
+                try {
+                  final xfile = await _visionController.controller!.takePicture();
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PcdResultView(capturedFile: xfile),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint("Gagal mengambil gambar: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Gagal mengambil gambar")),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text("Capture Frame"),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.indigo,
+          );
+        }
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

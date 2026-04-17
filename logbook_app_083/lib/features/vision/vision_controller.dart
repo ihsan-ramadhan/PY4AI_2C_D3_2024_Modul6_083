@@ -9,7 +9,6 @@ class VisionController extends ChangeNotifier with WidgetsBindingObserver {
   bool isFlashlightOn = false;
 
   VisionController() {
-    // Mendaftarkan observer agar bisa memantau status aplikasi (Lifecycle)
     WidgetsBinding.instance.addObserver(this);
     initCamera();
   }
@@ -30,11 +29,10 @@ class VisionController extends ChangeNotifier with WidgetsBindingObserver {
         return;
       }
 
-      // Memilih Kamera Belakang (Index 0)
       controller = CameraController(
         cameras[0],
-        ResolutionPreset.medium, // Keseimbangan antara akurasi AI & performa
-        enableAudio: false,      // Kita hanya butuh visual untuk deteksi jalan
+        ResolutionPreset.medium,
+        enableAudio: false,
       );
 
       await controller!.initialize();
@@ -68,25 +66,21 @@ class VisionController extends ChangeNotifier with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     final CameraController? cameraController = controller;
 
-    // Jika controller belum ada atau belum siap, abaikan
     if (cameraController == null || !cameraController.value.isInitialized) {
       return;
     }
 
     if (state == AppLifecycleState.inactive) {
-      // Melepaskan resource kamera saat aplikasi tidak terlihat
       cameraController.dispose();
       isInitialized = false;
       notifyListeners();
     } else if (state == AppLifecycleState.resumed) {
-      // Menginisialisasi ulang saat pengguna kembali ke aplikasi
       initCamera();
     }
   }
 
   @override
   void dispose() {
-    // Menghapus observer agar tidak terjadi memory leak
     WidgetsBinding.instance.removeObserver(this);
     controller?.dispose();
     super.dispose();
